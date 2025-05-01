@@ -101,7 +101,6 @@ class Session(BaseConfigDict):
 
         """
         for name, value in request_headers.items():
-            # bug check if value is None
             value = value.decode('utf8')
             if name == 'User-Agent' and value.startswith('HTTPie/'):
                 continue
