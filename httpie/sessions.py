@@ -22,10 +22,11 @@ SESSION_IGNORED_HEADER_PREFIXES = ['Content-', 'If-']
 
 def get_response(requests_session, session_name,
                  config_dir, args, read_only=False):
-    """Like `client.get_response`, but applies permanent
-    aspects of the session to the request.
-
     """
+                 Executes an HTTP request using session data persisted in a JSON file.
+                 
+                 Loads session headers, cookies, and authentication from a file based on the session name and request hostname, applies them to the outgoing request, and updates the session with new cookies and headers from the response unless in read-only mode. Returns the HTTP response object.
+                 """
     from .client import get_requests_kwargs, dump_request
     if os.path.sep in session_name:
         path = os.path.expanduser(session_name)
@@ -79,6 +80,12 @@ class Session(BaseConfigDict):
     about = 'HTTPie session file'
 
     def __init__(self, path, *args, **kwargs):
+        """
+        Initializes a new Session instance with empty headers, cookies, and authentication data.
+        
+        Args:
+            path: The file path where the session data will be stored.
+        """
         super(Session, self).__init__(*args, **kwargs)
         self._path = path
         self['headers'] = {}
@@ -90,15 +97,17 @@ class Session(BaseConfigDict):
         }
 
     def _get_path(self):
+        """
+        Returns the file path where the session data is stored.
+        """
         return self._path
 
     def update_headers(self, request_headers):
         """
-        Update the session headers with the request ones while ignoring
-        certain name prefixes.
-
-        :type request_headers: dict
-
+        Updates the session's stored headers with values from the provided request headers, excluding headers with ignored prefixes and 'User-Agent' headers starting with 'HTTPie/'.
+        
+        Args:
+            request_headers: Dictionary of request headers to merge into the session.
         """
         for name, value in request_headers.items():
             value = value.decode('utf8')
@@ -113,10 +122,18 @@ class Session(BaseConfigDict):
 
     @property
     def headers(self):
+        """
+        Returns the session's stored HTTP headers as a dictionary.
+        """
         return self['headers']
 
     @property
     def cookies(self):
+        """
+        Returns the session's cookies as a RequestsCookieJar.
+        
+        Converts the internally stored cookie dictionaries into a RequestsCookieJar object, recreating each cookie with its attributes and removing any expired cookies.
+        """
         jar = RequestsCookieJar()
         for name, cookie_dict in self['cookies'].items():
             jar.set_cookie(create_cookie(
@@ -127,7 +144,9 @@ class Session(BaseConfigDict):
     @cookies.setter
     def cookies(self, jar):
         """
-        :type jar: CookieJar
+        Serializes cookies from a CookieJar into the session for persistent storage.
+        
+        Only selected attributes ('value', 'path', 'secure', 'expires') are stored for each cookie.
         """
         # http://docs.python.org/2/library/cookielib.html#cookie-objects
         stored_attrs = ['value', 'path', 'secure', 'expires']
@@ -140,6 +159,11 @@ class Session(BaseConfigDict):
 
     @property
     def auth(self):
+        """
+        Returns the authentication object for the session, if available.
+        
+        If authentication details are stored in the session, retrieves the corresponding authentication plugin and constructs the authentication object using the stored username and password. Returns None if no valid authentication is configured.
+        """
         auth = self.get('auth', None)
         if not auth or not auth['type']:
             return
@@ -148,5 +172,11 @@ class Session(BaseConfigDict):
 
     @auth.setter
     def auth(self, auth):
+        """
+        Sets the session's authentication data.
+        
+        Args:
+        	auth: A dictionary containing 'type', 'username', and 'password' keys.
+        """
         assert set(['type', 'username', 'password']) == set(auth.keys())
         self['auth'] = auth

@@ -10,6 +10,11 @@ DEFAULT_INDENT = 4
 class JSONFormatter(FormatterPlugin):
 
     def format_body(self, body, mime):
+        """
+        Formats the body as pretty-printed JSON if the MIME type indicates JSON.
+        
+        If the MIME type contains 'json', attempts to parse and reformat the body with sorted keys, UTF-8 characters, and indentation for readability. Returns the original body if parsing fails or if the MIME type does not indicate JSON.
+        """
         if 'json' in mime:
             try:
                 obj = json.loads(body)

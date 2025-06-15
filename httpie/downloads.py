@@ -39,15 +39,17 @@ class ContentRangeError(ValueError):
 
 def parse_content_range(content_range, resumed_from):
     """
-    Parse and validate Content-Range header.
-
-    <http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html>
-
-    :param content_range: the value of a Content-Range response header
-                          eg. "bytes 21010-47021/47022"
-    :param resumed_from: first byte pos. from the Range request header
-    :return: total size of the response body when fully downloaded.
-
+    Parses and validates a Content-Range HTTP header against the requested byte range.
+    
+    Args:
+        content_range: The value of the Content-Range response header (e.g., "bytes 21010-47021/47022").
+        resumed_from: The starting byte position requested for resuming the download.
+    
+    Returns:
+        The total size of the response body when fully downloaded.
+    
+    Raises:
+        ContentRangeError: If the Content-Range header is missing, malformed, or inconsistent with the requested range.
     """
     if content_range is None:
         raise ContentRangeError('Missing Content-Range')
@@ -98,11 +100,9 @@ def parse_content_range(content_range, resumed_from):
 
 def filename_from_content_disposition(content_disposition):
     """
-    Extract and validate filename from a Content-Disposition header.
-
-    :param content_disposition: Content-Disposition value
-    :return: the filename if present and valid, otherwise `None`
-
+    Extracts and sanitizes a filename from a Content-Disposition header.
+    
+    Returns the filename if present and valid; otherwise, returns None.
     """
     # attachment; filename=jkbrzt-httpie-0.4.1-20-g40bd8f6.tar.gz
 
@@ -116,6 +116,11 @@ def filename_from_content_disposition(content_disposition):
 
 
 def filename_from_url(url, content_type):
+    """
+    Generates a filename from a URL, appending an extension based on content type if needed.
+    
+    If the URL path does not specify a filename or extension, a default name is used and an extension is guessed from the provided content type.
+    """
     fn = urlsplit(url).path.rstrip('/')
     fn = os.path.basename(fn) if fn else 'index'
     if '.' not in fn and content_type:
@@ -136,6 +141,17 @@ def filename_from_url(url, content_type):
 
 
 def get_unique_filename(filename, exists=os.path.exists):
+    """
+    Generates a unique filename by appending a numeric suffix if needed.
+    
+    If the specified filename already exists, appends an incrementing numeric suffix (e.g., '-1', '-2') until a non-existing filename is found.
+    
+    Args:
+        filename: The desired base filename.
+    
+    Returns:
+        A filename that does not exist according to the provided existence check.
+    """
     attempt = 0
     while True:
         suffix = '-' + str(attempt) if attempt > 0 else ''
@@ -149,16 +165,13 @@ class Download(object):
     def __init__(self, output_file=None,
                  resume=False, progress_file=sys.stderr):
         """
-        :param resume: Should the download resume if partial download
-                       already exists.
-        :type resume: bool
-
-        :param output_file: The file to store response body in. If not
-                            provided, it will be guessed from the response.
-
-        :param progress_file: Where to report download progress.
-
-        """
+                 Initializes a Download instance to manage HTTP file downloads.
+                 
+                 Args:
+                     output_file: Optional file path to save the downloaded content. If not provided, the filename will be determined from the response.
+                     resume: If True, attempts to resume an incomplete download if a partial file exists.
+                     progress_file: Output stream for reporting download progress.
+                 """
         self._output_file = output_file
         self._resume = resume
         self._resumed_from = 0
@@ -171,12 +184,10 @@ class Download(object):
         )
 
     def pre_request(self, request_headers):
-        """Called just before the HTTP request is sent.
-
-        Might alter `request_headers`.
-
-        :type request_headers: dict
-
+        """
+        Prepares HTTP request headers for downloading, enabling resuming if applicable.
+        
+        Modifies the headers to disable content encoding and, if resuming is enabled, sets the `Range` header to continue downloading from where a previous download left off.
         """
         # Disable content encoding so that we can resume, etc.
         request_headers['Accept-Encoding'] = None
@@ -190,14 +201,9 @@ class Download(object):
 
     def start(self, response):
         """
-        Initiate and return a stream for `response` body  with progress
-        callback attached. Can be called only once.
-
-        :param response: Initiated response object with headers already fetched
-        :type response: requests.models.Response
-
-        :return: RawStream, output_file
-
+        Starts the download process for the given HTTP response, preparing the output file and progress reporting.
+        
+        Initializes the output file for writing, handles resuming if enabled, and sets up a stream with a progress callback. Returns the stream for reading the response body and the output file object.
         """
         assert not self.status.time_started
 
@@ -260,15 +266,27 @@ class Download(object):
         return stream, self._output_file
 
     def finish(self):
+        """
+        Marks the download as finished and updates the status to indicate completion.
+        """
         assert not self.finished
         self.finished = True
         self.status.finished()
 
     def failed(self):
+        """
+        Stops the progress reporter thread when the download fails.
+        """
         self._progress_reporter.stop()
 
     @property
     def interrupted(self):
+        """
+        Indicates whether the download was interrupted before completion.
+        
+        Returns:
+            True if the download has finished but the total downloaded bytes do not match the expected total size; otherwise, False.
+        """
         return (
             self.finished
             and self.status.total_size
@@ -277,12 +295,10 @@ class Download(object):
 
     def chunk_downloaded(self, chunk):
         """
-        A download progress callback.
-
-        :param chunk: A chunk of response body data that has just
-                      been downloaded and written to the output.
-        :type chunk: bytes
-
+        Updates the download status with the size of a newly downloaded chunk.
+        
+        Args:
+            chunk: The bytes object representing the downloaded data chunk.
         """
         self.status.chunk_downloaded(len(chunk))
 
@@ -291,6 +307,11 @@ class Status(object):
     """Holds details about the downland status."""
 
     def __init__(self):
+        """
+        Initializes the Status object to track download progress and timing.
+        
+        Sets counters for downloaded bytes, total size, resumed offset, and timestamps for start and finish.
+        """
         self.downloaded = 0
         self.total_size = None
         self.resumed_from = 0
@@ -298,6 +319,13 @@ class Status(object):
         self.time_finished = None
 
     def started(self, resumed_from=0, total_size=None):
+        """
+        Marks the start of the download, recording the start time, resumed offset, and total size if provided.
+        
+        Args:
+            resumed_from: The byte offset from which the download is resumed.
+            total_size: The total size of the file being downloaded, if known.
+        """
         assert self.time_started is None
         if total_size is not None:
             self.total_size = total_size
@@ -305,14 +333,29 @@ class Status(object):
         self.time_started = time()
 
     def chunk_downloaded(self, size):
+        """
+        Updates the downloaded byte count by adding the size of the latest chunk.
+        
+        Args:
+            size: The number of bytes in the downloaded chunk.
+        """
         assert self.time_finished is None
         self.downloaded += size
 
     @property
     def has_finished(self):
+        """
+        Indicates whether the download has finished.
+        
+        Returns:
+            True if the finish time has been recorded, otherwise False.
+        """
         return self.time_finished is not None
 
     def finished(self):
+        """
+        Marks the download as finished by recording the finish timestamp.
+        """
         assert self.time_started is not None
         assert self.time_finished is None
         self.time_finished = time()
@@ -327,9 +370,13 @@ class ProgressReporterThread(threading.Thread):
     """
     def __init__(self, status, output, tick=.1, update_interval=1):
         """
-
-        :type status: Status
-        :type output: file
+        Initializes a thread for periodically reporting download progress.
+        
+        Args:
+            status: The Status object tracking download progress.
+            output: The output stream to which progress updates are written.
+            tick: Time interval in seconds between progress updates.
+            update_interval: Time interval in seconds for recalculating download speed.
         """
         super(ProgressReporterThread, self).__init__()
         self.status = status
@@ -343,10 +390,17 @@ class ProgressReporterThread(threading.Thread):
         self._should_stop = threading.Event()
 
     def stop(self):
-        """Stop reporting on next tick."""
+        """
+        Signals the progress reporter thread to stop at the next update interval.
+        """
         self._should_stop.set()
 
     def run(self):
+        """
+        Runs the progress reporting loop until the download finishes or is stopped.
+        
+        Periodically updates the progress display and, upon completion, outputs a summary line.
+        """
         while not self._should_stop.is_set():
             if self.status.has_finished:
                 self.sum_up()
@@ -357,6 +411,12 @@ class ProgressReporterThread(threading.Thread):
 
     def report_speed(self):
 
+        """
+        Calculates and displays the current download progress, speed, and ETA.
+        
+        Updates the progress line based on the amount of data downloaded and the elapsed time.
+        Displays a spinner animation and writes the formatted progress information to the output stream.
+        """
         now = time()
 
         if now - self._prev_time >= self._update_interval:
@@ -410,6 +470,9 @@ class ProgressReporterThread(threading.Thread):
                              else 0)
 
     def sum_up(self):
+        """
+        Writes a summary of the completed download, including total bytes, duration, and average speed.
+        """
         actually_downloaded = (self.status.downloaded
                                - self.status.resumed_from)
         time_taken = self.status.time_finished - self.status.time_started

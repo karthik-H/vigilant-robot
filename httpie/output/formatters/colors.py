@@ -28,6 +28,11 @@ class ColorFormatter(FormatterPlugin):
     group_name = 'colors'
 
     def __init__(self, env, color_scheme=DEFAULT_STYLE, **kwargs):
+        """
+        Initializes the ColorFormatter with the specified color scheme and environment settings.
+        
+        Disables color formatting if color output is not enabled in the environment. Sets up a lexer cache for efficient syntax highlighting and selects the appropriate Pygments style and terminal formatter based on the environment's color capabilities.
+        """
         super(ColorFormatter, self).__init__(**kwargs)
         if not env.colors:
             self.enabled = False
@@ -48,15 +53,35 @@ class ColorFormatter(FormatterPlugin):
         self.formatter = fmt_class(style=style_class)
 
     def format_headers(self, headers):
+        """
+        Applies syntax highlighting to HTTP headers using a custom HTTP lexer.
+        
+        Args:
+            headers: The raw HTTP headers as a string.
+        
+        Returns:
+            The colorized headers as a string with leading and trailing whitespace removed.
+        """
         return pygments.highlight(headers, HTTPLexer(), self.formatter).strip()
 
     def format_body(self, body, mime):
+        """
+        Applies syntax highlighting to the HTTP body based on its MIME type.
+        
+        If a suitable lexer is found for the given MIME type, the body is colorized; otherwise, the original body is returned with leading and trailing whitespace removed.
+        """
         lexer = self.get_lexer(mime)
         if lexer:
             body = pygments.highlight(body, lexer, self.formatter)
         return body.strip()
 
     def get_lexer(self, mime):
+        """
+        Retrieves and caches a Pygments lexer for the specified MIME type.
+        
+        If a lexer for the given MIME type has already been cached, it is returned directly.
+        Otherwise, a new lexer is obtained using the `get_lexer` function, cached, and returned.
+        """
         if mime in self.lexer_cache:
             return self.lexer_cache[mime]
         self.lexer_cache[mime] = get_lexer(mime)
@@ -64,6 +89,17 @@ class ColorFormatter(FormatterPlugin):
 
 
 def get_lexer(mime):
+    """
+    Attempts to obtain a Pygments lexer for the given MIME type.
+    
+    Tries to find a lexer by MIME type or by relevant subtype names, including handling compound subtypes (e.g., 'application/ld+json') and falling back to a JSON lexer if appropriate.
+    
+    Args:
+        mime: The MIME type string (e.g., 'application/json').
+    
+    Returns:
+        A Pygments lexer instance suitable for the MIME type, or None if no lexer is found.
+    """
     mime_types, lexer_names = [mime], []
     type_, subtype = mime.split('/')
     if '+' not in subtype:

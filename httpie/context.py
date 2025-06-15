@@ -52,9 +52,9 @@ class Environment(object):
 
     def __init__(self, **kwargs):
         """
-        Use keyword arguments to overwrite
-        any of the class attributes for this instance.
-
+        Initializes an Environment instance, allowing class attributes to be overridden via keyword arguments.
+        
+        Keyword arguments can be used to customize any class attribute for this instance. Standard input and output encodings are determined based on provided values, stream encodings, or default to 'utf8' if unspecified. On Windows, the actual encoding is retrieved from the unwrapped output stream if colorama is used.
         """
         assert all(hasattr(type(self), attr) for attr in kwargs.keys())
         self.__dict__.update(**kwargs)
@@ -75,6 +75,11 @@ class Environment(object):
 
     @property
     def config(self):
+        """
+        Lazily initializes and returns the configuration object for the environment.
+        
+        If the configuration does not exist, it is created and saved; otherwise, the existing configuration is loaded. The configuration instance is cached for subsequent access.
+        """
         if not hasattr(self, '_config'):
             self._config = Config(directory=self.config_dir)
             if self._config.is_new():
