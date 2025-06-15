@@ -13,6 +13,9 @@ class PyTest(TestCommand):
     # `$ python setup.py test' simply installs minimal requirements
     # and runs the tests with no fancy stuff like parallel execution.
     def finalize_options(self):
+        """
+        Configures test command options for running doctests and verbose tests on the httpie and tests directories.
+        """
         TestCommand.finalize_options(self)
         self.test_args = [
             '--doctest-modules', '--verbose',
@@ -21,6 +24,11 @@ class PyTest(TestCommand):
         self.test_suite = True
 
     def run_tests(self):
+        """
+        Runs the test suite using pytest with the specified test arguments.
+        
+        Exits the process with the return code from pytest.
+        """
         import pytest
         sys.exit(pytest.main(self.test_args))
 
@@ -65,6 +73,12 @@ extras_require = {
 
 
 def long_description():
+    """
+    Reads and returns the contents of the README.rst file as a UTF-8 encoded string.
+    
+    Returns:
+        The full text of README.rst, used as the package's long description.
+    """
     with codecs.open('README.rst', encoding='utf8') as f:
         return f.read()
 

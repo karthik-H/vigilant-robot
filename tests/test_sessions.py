@@ -15,20 +15,25 @@ from fixtures import UNICODE
 class SessionTestBase(object):
 
     def start_session(self, httpbin):
-        """Create and reuse a unique config dir for each test."""
+        """
+        Creates a unique configuration directory for the test session.
+        
+        Initializes a new config directory for session-related test isolation.
+        """
         self.config_dir = mk_config_dir()
 
     def teardown_method(self, method):
+        """
+        Removes the temporary configuration directory after each test to ensure cleanup.
+        """
         shutil.rmtree(self.config_dir)
 
     def env(self):
         """
-        Return an environment.
-
-        Each environment created withing a test method
-        will share the same config_dir. It is necessary
-        for session files being reused.
-
+        Creates a test environment configured to use the current test's config directory.
+        
+        Returns:
+            TestEnvironment: An environment instance that enables session file reuse within the test.
         """
         return TestEnvironment(config_dir=self.config_dir)
 
@@ -41,9 +46,9 @@ class TestSessionFlow(SessionTestBase):
 
     def start_session(self, httpbin):
         """
-        Start a full-blown session with a custom request header,
-        authorization, and response cookies.
-
+        Initializes a session with a custom header, HTTP Basic authentication, and a response cookie.
+        
+        Starts a session named "test" by sending a GET request that sets a cookie, includes a custom header, and uses HTTP Basic Auth credentials. Asserts that the response status is HTTP OK.
         """
         super(TestSessionFlow, self).start_session(httpbin)
         r1 = http('--follow', '--session=test', '--auth=username:password',
@@ -53,6 +58,11 @@ class TestSessionFlow(SessionTestBase):
         assert HTTP_OK in r1
 
     def test_session_created_and_reused(self, httpbin):
+        """
+        Tests that a session is created and reused, preserving headers, cookies, and authorization.
+        
+        Starts a session, sends a request using the session, and verifies that the custom header, cookie, and authorization header are present in the response, confirming session persistence.
+        """
         self.start_session(httpbin)
         # Verify that the session created in setup_method() has been used.
         r2 = http('--session=test',
@@ -63,6 +73,11 @@ class TestSessionFlow(SessionTestBase):
         assert 'Basic ' in r2.json['headers']['Authorization']
 
     def test_session_update(self, httpbin):
+        """
+        Tests that session data is updated when making requests with modified headers, cookies, and authentication.
+        
+        Starts with an existing session, modifies its data via a request, and verifies that subsequent requests reflect the updated session state.
+        """
         self.start_session(httpbin)
         # Get a response to a request from the original session.
         r2 = http('--session=test', 'GET', httpbin.url + '/get',
@@ -86,6 +101,11 @@ class TestSessionFlow(SessionTestBase):
                 r4.json['headers']['Authorization'])
 
     def test_session_read_only(self, httpbin):
+        """
+        Verifies that session data remains unchanged when using the --session-read-only flag.
+        
+        This test ensures that making a request with --session-read-only does not update the session file, even if the request would otherwise modify session data such as cookies, headers, or authentication.
+        """
         self.start_session(httpbin)
         # Get a response from the original session.
         r2 = http('--session=test', 'GET', httpbin.url + '/get',
@@ -117,6 +137,11 @@ class TestSession(SessionTestBase):
     """Stand-alone session tests."""
 
     def test_session_ignored_header_prefixes(self, httpbin):
+        """
+        Verifies that headers with ignored prefixes are not persisted in session files.
+        
+        Starts a session and sends a request with `Content-Type` and `If-Unmodified-Since` headers, then checks that these headers are not present in subsequent requests using the same session.
+        """
         self.start_session(httpbin)
         r1 = http('--session=test', 'GET', httpbin.url + '/get',
                   'Content-Type: text/plain',
@@ -130,6 +155,11 @@ class TestSession(SessionTestBase):
         assert 'If-Unmodified-Since' not in r2.json['headers']
 
     def test_session_by_path(self, httpbin):
+        """
+        Verifies that a session file specified by path preserves custom headers across requests.
+        
+        Starts a session using an explicit session file path, sends a request with a custom header, and checks that the header is retained in subsequent requests using the same session file.
+        """
         self.start_session(httpbin)
         session_path = os.path.join(self.config_dir, 'session-by-path.json')
         r1 = http('--session=' + session_path, 'GET', httpbin.url + '/get',
@@ -146,6 +176,11 @@ class TestSession(SessionTestBase):
         reason="This test fails intermittently on Python 3 - "
                "see https://github.com/jkbrzt/httpie/issues/282")
     def test_session_unicode(self, httpbin):
+        """
+        Tests that sessions correctly handle Unicode credentials and headers.
+        
+        Starts a session with Unicode values in the Authorization header and a custom header, then verifies that these Unicode values are preserved and correctly represented in subsequent session requests.
+        """
         self.start_session(httpbin)
 
         r1 = http('--session=test', u'--auth=test:' + UNICODE,
@@ -164,6 +199,11 @@ class TestSession(SessionTestBase):
         assert UNICODE in r2
 
     def test_session_default_header_value_overwritten(self, httpbin):
+        """
+        Verifies that a custom User-Agent header set in a session persists across subsequent requests.
+        
+        Ensures that when a session is created with a custom User-Agent header, this value overwrites the default and remains unchanged in future requests using the same session.
+        """
         self.start_session(httpbin)
         # https://github.com/jkbrzt/httpie/issues/180
         r1 = http('--session=test',
@@ -178,6 +218,11 @@ class TestSession(SessionTestBase):
 
     def test_download_in_session(self, httpbin):
         # https://github.com/jkbrzt/httpie/issues/412
+        """
+        Verifies that file downloads can be performed within an HTTP session context.
+        
+        This test ensures that using the `--download` flag with an active session does not cause errors, confirming compatibility between session management and file download functionality.
+        """
         self.start_session(httpbin)
         cwd = os.getcwd()
         try:

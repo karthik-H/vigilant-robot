@@ -30,7 +30,16 @@ from httpie.output.streams import (
 
 
 def get_exit_status(http_status, follow=False):
-    """Translate HTTP status code to exit status code."""
+    """
+    Converts an HTTP status code to the corresponding exit status code.
+    
+    Args:
+        http_status: The HTTP status code to evaluate.
+        follow: If False, treats 3xx redirect codes as errors; otherwise, considers them successful.
+    
+    Returns:
+        An ExitStatus value representing the appropriate exit code for the given HTTP status.
+    """
     if 300 <= http_status <= 399 and not follow:
         # Redirect
         return ExitStatus.ERROR_HTTP_3XX
@@ -45,6 +54,11 @@ def get_exit_status(http_status, follow=False):
 
 
 def print_debug_info(env):
+    """
+    Outputs version and environment debug information to the standard error stream.
+    
+    Includes details about HTTPie, Requests, Pygments, Python, and the HTTPie data directory.
+    """
     env.stderr.writelines([
         'HTTPie %s\n' % httpie_version,
         'HTTPie data: %s\n' % env.config.directory,
@@ -56,9 +70,14 @@ def print_debug_info(env):
 
 def decode_args(args, stdin_encoding):
     """
-    Convert all bytes ags to str
-    by decoding them using stdin encoding.
-
+    Decodes byte arguments to strings using the specified standard input encoding.
+    
+    Args:
+        args: A list of arguments, which may be bytes or strings.
+        stdin_encoding: The encoding to use for decoding byte arguments.
+    
+    Returns:
+        A list where all byte arguments are decoded to strings; string arguments are unchanged.
     """
     return [
         arg.decode(stdin_encoding)
@@ -68,10 +87,17 @@ def decode_args(args, stdin_encoding):
 
 
 def main(args=sys.argv[1:], env=Environment(), error=None):
-    """Run the main program and write the output to ``env.stdout``.
-
-    Return exit status code.
-
+    """
+    Executes the HTTPie command-line client workflow and writes output to the environment's standard output.
+    
+    This function processes command-line arguments, manages plugins, handles HTTP requests and responses, supports file downloads, and manages error reporting and exit status codes. It ensures proper cleanup and error handling for various scenarios, including incomplete downloads, timeouts, and user interruptions.
+    
+    Args:
+        args: Command-line arguments to process.
+        error: Optional custom error reporting function.
+    
+    Returns:
+        An integer exit status code indicating the result of the operation.
     """
     args = decode_args(args, env.stdin_encoding)
     plugin_manager.load_installed_plugins()
@@ -82,6 +108,14 @@ def main(args=sys.argv[1:], env=Environment(), error=None):
         args = env.config.default_options + args
 
     def _error(msg, *args, **kwargs):
+        """
+        Writes a formatted error message to the environment's standard error stream.
+        
+        Args:
+            msg: The error message format string.
+            *args: Arguments to be formatted into the message.
+            level: Optional; the severity level of the error (default is 'error').
+        """
         msg = msg % args
         level = kwargs.get('level', 'error')
         env.stderr.write('\nhttp: %s: %s\n' % (level, msg))

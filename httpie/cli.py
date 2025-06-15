@@ -34,10 +34,21 @@ class HTTPieHelpFormatter(RawDescriptionHelpFormatter):
     """
     def __init__(self, max_help_position=6, *args, **kwargs):
         # A smaller indent for args help.
+        """
+        Initializes the help formatter with a reduced indentation for argument help text.
+        
+        Args:
+            max_help_position: The column at which help text is aligned. Defaults to 6.
+        """
         kwargs['max_help_position'] = max_help_position
         super(HTTPieHelpFormatter, self).__init__(*args, **kwargs)
 
     def _split_lines(self, text, width):
+        """
+        Processes and splits help text into individual lines for display.
+        
+        Dedents and strips the input text, appends two newlines, and returns a list of lines.
+        """
         text = dedent(text).strip() + '\n\n'
         return text.splitlines()
 

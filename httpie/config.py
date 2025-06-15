@@ -20,15 +20,28 @@ class BaseConfigDict(dict):
     about = None
 
     def __getattr__(self, item):
+        """
+        Enables attribute-style access to dictionary keys.
+        
+        Allows configuration values to be accessed as attributes of the instance.
+        """
         return self[item]
 
     def _get_path(self):
-        """Return the config file path without side-effects."""
+        """
+        Returns the path to the configuration file.
+        
+        This method must be implemented by subclasses to specify the location of the config file.
+        """
         raise NotImplementedError()
 
     @property
     def path(self):
-        """Return the config file path creating basedir, if needed."""
+        """
+        Returns the path to the configuration file, creating the base directory if it does not exist.
+        
+        If the base directory already exists, no error is raised. The directory is created with permissions set to 0o700.
+        """
         path = self._get_path()
         try:
             os.makedirs(os.path.dirname(path), mode=0o700)
@@ -38,9 +51,21 @@ class BaseConfigDict(dict):
         return path
 
     def is_new(self):
+        """
+        Checks if the configuration file does not exist.
+        
+        Returns:
+            True if the configuration file is missing, indicating a new configuration; otherwise, False.
+        """
         return not os.path.exists(self._get_path())
 
     def load(self):
+        """
+        Loads configuration data from the associated JSON file.
+        
+        If the file exists and contains valid JSON, updates the dictionary with its contents.
+        Raises a ValueError if the file contains invalid JSON. Ignores missing files; re-raises other I/O errors.
+        """
         try:
             with open(self.path, 'rt') as f:
                 try:
@@ -56,6 +81,11 @@ class BaseConfigDict(dict):
                 raise
 
     def save(self):
+        """
+        Saves the current configuration to a JSON file, including metadata.
+        
+        Adds HTTPie version, help URL, and description to the `__meta__` section before writing the configuration as formatted JSON to the config file path.
+        """
         self['__meta__'] = {
             'httpie': __version__
         }
@@ -70,6 +100,11 @@ class BaseConfigDict(dict):
             f.write('\n')
 
     def delete(self):
+        """
+        Deletes the configuration file if it exists.
+        
+        Ignores the operation if the file does not exist; re-raises other OS errors.
+        """
         try:
             os.unlink(self.path)
         except OSError as e:
@@ -89,9 +124,18 @@ class Config(BaseConfigDict):
     }
 
     def __init__(self, directory=DEFAULT_CONFIG_DIR):
+        """
+        Initializes the Config object with default values and sets the configuration directory.
+        
+        Args:
+            directory: The directory where the configuration file will be stored. Defaults to DEFAULT_CONFIG_DIR.
+        """
         super(Config, self).__init__()
         self.update(self.DEFAULTS)
         self.directory = directory
 
     def _get_path(self):
+        """
+        Returns the full path to the configuration file within the specified directory.
+        """
         return os.path.join(self.directory, self.name + '.json')

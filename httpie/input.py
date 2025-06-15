@@ -112,12 +112,23 @@ class HTTPieArgumentParser(ArgumentParser):
     """
 
     def __init__(self, *args, **kwargs):
+        """
+        Initializes the HTTPieArgumentParser with help option disabled by default.
+        
+        This ensures that the parser does not automatically add the default help flag,
+        allowing for custom help handling within the application.
+        """
         kwargs['add_help'] = False
         super(HTTPieArgumentParser, self).__init__(*args, **kwargs)
 
     # noinspection PyMethodOverriding
     def parse_args(self, env, args=None, namespace=None):
 
+        """
+        Parses command-line arguments for an HTTP request, applying environment and configuration settings.
+        
+        This method processes CLI arguments, applies environment-based defaults, validates options, sets up input/output streams, infers HTTP method and URL scheme, parses key-value items, and handles authentication. Returns the fully processed arguments namespace.
+        """
         self.env = env
         self.args, no_options = super(HTTPieArgumentParser, self)\
             .parse_known_args(args, namespace)
@@ -157,6 +168,9 @@ class HTTPieArgumentParser(ArgumentParser):
     # noinspection PyShadowingBuiltins
     def _print_message(self, message, file=None):
         # Sneak in our stderr/stdout.
+        """
+        Prints a message to the appropriate output stream, redirecting to environment-specific stdout or stderr as needed.
+        """
         file = {
             sys.stdout: self.env.stdout,
             sys.stderr: self.env.stderr,
@@ -168,8 +182,9 @@ class HTTPieArgumentParser(ArgumentParser):
 
     def _setup_standard_streams(self):
         """
-        Modify `env.stdout` and `env.stdout_isatty` based on args, if needed.
-
+        Configures the environment's standard output streams based on output and download options.
+        
+        Adjusts `env.stdout` and related flags to ensure correct output behavior when using `--output` or `--download`, handling file truncation and stream redirection as needed.
         """
         if not self.env.stdout_isatty and self.args.output_file:
             self.error('Cannot use --output, -o with redirected output.')
@@ -202,15 +217,21 @@ class HTTPieArgumentParser(ArgumentParser):
             self.env.stdout_isatty = False
 
     def _apply_config(self):
+        """
+        Applies implicit content type configuration to the parsed arguments.
+        
+        If JSON mode is not enabled and the environment configuration specifies
+        'form' as the implicit content type, sets the form flag on the arguments.
+        """
         if (not self.args.json
                 and self.env.config.implicit_content_type == 'form'):
             self.args.form = True
 
     def _process_auth(self):
         """
-        If only a username provided via --auth, then ask for a password.
-        Or, take credentials from the URL, if provided.
-
+        Processes authentication credentials by prompting for a password if only a username is provided, or extracting credentials from the URL if present.
+        
+        If the `--auth` argument is given without a password, prompts the user for a password unless `--ignore-stdin` is set. If authentication credentials are embedded in the URL, extracts and assigns them to the authentication argument.
         """
         url = urlsplit(self.args.url)
 
@@ -234,10 +255,10 @@ class HTTPieArgumentParser(ArgumentParser):
             )
 
     def _apply_no_options(self, no_options):
-        """For every `--no-OPTION` in `no_options`, set `args.OPTION` to
-        its default value. This allows for un-setting of options, e.g.,
-        specified in config.
-
+        """
+        Resets options specified with `--no-OPTION` flags to their default values.
+        
+        For each `--no-OPTION` in the provided list, sets the corresponding argument to its default, allowing users to override or unset options previously set via configuration or other means. Raises an error if an unrecognized `--no-OPTION` flag is encountered.
         """
         invalid = []
 
@@ -260,10 +281,10 @@ class HTTPieArgumentParser(ArgumentParser):
             self.error(msg % ' '.join(invalid))
 
     def _body_from_file(self, fd):
-        """There can only be one source of request data.
-
-        Bytes are always read.
-
+        """
+        Reads the entire request body from a file descriptor as bytes.
+        
+        Raises an error if request data has already been provided via key-value arguments, as only one source of request data is allowed.
         """
         if self.args.data:
             self.error('Request body (from stdin or a file) and request '
@@ -271,9 +292,10 @@ class HTTPieArgumentParser(ArgumentParser):
         self.args.data = getattr(fd, 'buffer', fd).read()
 
     def _guess_method(self):
-        """Set `args.method` if not specified to either POST or GET
-        based on whether the request has data or not.
-
+        """
+        Infers and sets the HTTP method (GET or POST) if not explicitly specified.
+        
+        If the method is missing, determines whether to use POST or GET based on the presence of request data or standard input. Also corrects argument misplacement when the method is actually a URL, parsing and reassigning arguments as needed.
         """
         if self.args.method is None:
             # Invoked as `http URL'.
@@ -309,9 +331,10 @@ class HTTPieArgumentParser(ArgumentParser):
                 self.args.method = HTTP_POST if has_data else HTTP_GET
 
     def _parse_items(self):
-        """Parse `args.items` into `args.headers`, `args.data`, `args.params`,
-         and `args.files`.
-
+        """
+        Parses CLI key-value items into headers, data, files, and parameters for the HTTP request.
+        
+        Populates the corresponding attributes on `self.args` with the parsed values. Handles file uploads and infers content type when necessary. Raises an error if file fields are invalid or if parsing fails.
         """
         try:
             items = parse_items(
@@ -347,10 +370,10 @@ class HTTPieArgumentParser(ArgumentParser):
                     self.args.headers['Content-Type'] = content_type
 
     def _process_output_options(self):
-        """Apply defaults to output options, or validate the provided ones.
-
-        The default output options are stdout-type-sensitive.
-
+        """
+        Sets or validates output formatting options based on environment and arguments.
+        
+        If no output options are specified, applies defaults depending on whether stdout is a terminal. Raises an error for unknown output options. Adjusts output options when downloading to avoid redundant response body output.
         """
         if not self.args.output_options:
             self.args.output_options = (
@@ -372,6 +395,11 @@ class HTTPieArgumentParser(ArgumentParser):
                 set(self.args.output_options) - set(OUT_RESP_BODY))
 
     def _process_pretty_options(self):
+        """
+        Processes and validates pretty-printing options for CLI output formatting.
+        
+        Adjusts the prettify setting based on whether output is to a terminal, the operating system, and output file usage. Raises an error if colorized output is requested for non-terminal output on Windows.
+        """
         if self.args.prettify == PRETTY_STDOUT_TTY_ONLY:
             self.args.prettify = PRETTY_MAP[
                 'all' if self.env.stdout_isatty else 'none']
@@ -383,6 +411,11 @@ class HTTPieArgumentParser(ArgumentParser):
             self.args.prettify = PRETTY_MAP[self.args.prettify]
 
     def _validate_download_options(self):
+        """
+        Validates the combination of download-related command-line options.
+        
+        Raises an error if the `--continue` flag is used without `--download`, or if `--continue` is specified without an output file.
+        """
         if not self.args.download:
             if self.args.download_resume:
                 self.error('--continue only works with --download')
@@ -399,25 +432,55 @@ class KeyValue(object):
     """Base key-value pair parsed from CLI."""
 
     def __init__(self, key, value, sep, orig):
+        """
+        Initializes a KeyValue instance representing a parsed key-value pair from CLI input.
+        
+        Args:
+            key: The key part of the pair.
+            value: The value part of the pair.
+            sep: The separator character used between key and value.
+            orig: The original unparsed string.
+        """
         self.key = key
         self.value = value
         self.sep = sep
         self.orig = orig
 
     def __eq__(self, other):
+        """
+        Checks if this instance is equal to another by comparing their attribute dictionaries.
+        
+        Returns:
+            True if both instances have identical attributes; otherwise, False.
+        """
         return self.__dict__ == other.__dict__
 
     def __repr__(self):
+        """
+        Returns a string representation of the object's attribute dictionary.
+        """
         return repr(self.__dict__)
 
 
 class SessionNameValidator(object):
 
     def __init__(self, error_message):
+        """
+        Initializes the exception with a specific error message.
+        
+        Args:
+            error_message: The error message describing the parsing error.
+        """
         self.error_message = error_message
 
     def __call__(self, value):
         # Session name can be a path or just a name.
+        """
+        Validates that the provided session name is either a valid path or matches the allowed pattern.
+        
+        Raises:
+            ArgumentError: If the session name does not contain a path separator and does not match the required pattern.
+        """
         if (os.path.sep not in value
                 and not VALID_SESSION_NAME_PATTERN.search(value)):
             raise ArgumentError(None, self.error_message)
@@ -435,31 +498,35 @@ class KeyValueArgType(object):
     key_value_class = KeyValue
 
     def __init__(self, *separators):
+        """
+        Initializes the argument type parser with specified separators.
+        
+        Args:
+            *separators: One or more strings representing valid key-value separators.
+        """
         self.separators = separators
         self.special_characters = set('\\')
         for separator in separators:
             self.special_characters.update(separator)
 
     def __call__(self, string):
-        """Parse `string` and return `self.key_value_class()` instance.
-
-        The best of `self.separators` is determined (first found, longest).
-        Back slash escaped characters aren't considered as separators
-        (or parts thereof). Literal back slash characters have to be escaped
-        as well (r'\\').
-
+        """
+        Parses a string into a key-value pair using the first matching separator.
+        
+        Backslash-escaped characters are treated as literals and not as separators. Returns an instance of `self.key_value_class` representing the parsed key, value, separator, and original string.
+        
+        Raises:
+            ArgumentTypeError: If the string does not contain a valid separator.
         """
 
         class Escaped(str):
             """Represents an escaped character."""
 
         def tokenize(string):
-            """Tokenize `string`. There are only two token types - strings
-            and escaped characters:
-
-            tokenize(r'foo\=bar\\baz')
-            => ['foo', Escaped('='), 'bar', Escaped('\\'), 'baz']
-
+            """
+            Tokenizes a string into segments of plain text and escaped special characters.
+            
+            Returns a list where each element is either a substring or an Escaped instance representing a special character that was escaped in the input.
             """
             tokens = ['']
             characters = iter(string)
@@ -519,12 +586,29 @@ class AuthCredentials(KeyValue):
 
     def _getpass(self, prompt):
         # To allow mocking.
+        """
+        Prompts the user for a password securely, displaying the given prompt.
+        
+        Returns:
+            The entered password as a string.
+        """
         return getpass.getpass(str(prompt))
 
     def has_password(self):
+        """
+        Checks if the authentication credentials include a password.
+        
+        Returns:
+            True if a password is present; otherwise, False.
+        """
         return self.value is not None
 
     def prompt_password(self, host):
+        """
+        Prompts the user to enter a password for authentication to the specified host.
+        
+        If the user interrupts input or sends EOF, the program exits gracefully.
+        """
         try:
             self.value = self._getpass(
                 'http: password for %s@%s: ' % (self.key, host))
@@ -539,10 +623,11 @@ class AuthCredentialsArgType(KeyValueArgType):
     key_value_class = AuthCredentials
 
     def __call__(self, string):
-        """Parse credentials from `string`.
-
-        ("username" or "username:password").
-
+        """
+        Parses authentication credentials from a string.
+        
+        Accepts either "username" or "username:password". If the password is not provided,
+        returns an AuthCredentials instance with a None password to allow prompting later.
         """
         try:
             return super(AuthCredentialsArgType, self).__call__(string)
@@ -563,6 +648,11 @@ class RequestItemsDict(OrderedDict):
         # Manually set keys when initialized with an iterable as PyPy
         # doesn't call __setitem__ in such case (pypy3 does).
         def __init__(self, *args, **kwargs):
+            """
+            Initializes a RequestItemsDict, supporting initialization from an iterable of key-value pairs.
+            
+            If a single positional argument is provided and is an iterable, the dictionary is populated by assigning each key-value pair, allowing for multiple values per key. Otherwise, standard dictionary initialization is used.
+            """
             if len(args) == 1 and isinstance(args[0], Iterable):
                 super(RequestItemsDict, self).__init__(**kwargs)
                 for k, v in args[0]:
@@ -572,12 +662,10 @@ class RequestItemsDict(OrderedDict):
 
     # noinspection PyMethodOverriding
     def __setitem__(self, key, value):
-        """ If `key` is assigned more than once, `self[key]` holds a
-        `list` of all the values.
-
-        This allows having multiple fields with the same name in form
-        data and URL params.
-
+        """
+        Stores multiple values for a key by converting the value to a list if the key is assigned more than once.
+        
+        Allows support for repeated fields in form data and URL parameters by aggregating values under the same key.
         """
         assert not isinstance(value, list)
         if key not in self:
@@ -595,6 +683,11 @@ class ParamsDict(RequestItemsDict):
 class DataDict(RequestItemsDict):
 
     def items(self):
+        """
+        Yields all key-value pairs in the dictionary, expanding lists of values for each key.
+        
+        Each key associated with multiple values will be yielded once for each value.
+        """
         for key, values in super(RequestItemsDict, self).items():
             if not isinstance(values, list):
                 values = [values]
@@ -608,10 +701,13 @@ RequestItems = namedtuple('RequestItems',
 
 def get_content_type(filename):
     """
-    Return the content type for ``filename`` in format appropriate
-    for Content-Type headers, or ``None`` if the file type is unknown
-    to ``mimetypes``.
-
+    Determines the MIME type of a file for use in HTTP Content-Type headers.
+    
+    Args:
+        filename: The name or path of the file to inspect.
+    
+    Returns:
+        The MIME type string suitable for a Content-Type header, or None if the type cannot be determined.
     """
     mime, encoding = mimetypes.guess_type(filename, strict=False)
     if mime:
@@ -626,10 +722,18 @@ def parse_items(items,
                 data_class=OrderedDict,
                 files_class=DataDict,
                 params_class=ParamsDict):
-    """Parse `KeyValue` `items` into `data`, `headers`, `files`,
-    and `params`.
-
     """
+                Parses a list of KeyValue items into structured headers, data, files, and query parameters.
+                
+                Each item is categorized based on its separator and processed accordingly:
+                - File items are read from disk and wrapped with filename and content type.
+                - Embedded file data is read and decoded as UTF-8 text.
+                - Raw JSON items are parsed into Python objects.
+                - Raises ParseError on file I/O or JSON parsing errors.
+                
+                Returns:
+                    RequestItems: A named tuple containing headers, data, files, and params as dictionaries of the specified classes.
+                """
     headers = []
     data = []
     files = []
@@ -686,6 +790,15 @@ def parse_items(items,
 
 
 def readable_file_arg(filename):
+    """
+    Validates that the specified file can be opened for reading in binary mode.
+    
+    Raises:
+        ArgumentTypeError: If the file cannot be opened for reading.
+    
+    Returns:
+        The filename if the file is readable.
+    """
     try:
         open(filename, 'rb')
     except IOError as ex:

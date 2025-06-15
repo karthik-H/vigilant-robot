@@ -25,7 +25,11 @@ class BinarySuppressedError(Exception):
 
 
 def write(stream, outfile, flush):
-    """Write the output stream."""
+    """
+    Writes byte chunks from the stream to the specified output file.
+    
+    If the output file supports a buffer interface, writes directly to the buffer; otherwise, writes to the file object itself. Flushes the output after each chunk if requested.
+    """
     try:
         # Writing bytes so we use the buffer interface (Python 3).
         buf = outfile.buffer
@@ -39,10 +43,10 @@ def write(stream, outfile, flush):
 
 
 def write_with_colors_win_py3(stream, outfile, flush):
-    """Like `write`, but colorized chunks are written as text
-    directly to `outfile` to ensure it gets processed by colorama.
-    Applies only to Windows with Python 3 and colorized terminal output.
-
+    """
+    Writes output chunks to a stream, ensuring colorized text is processed by colorama on Windows with Python 3.
+    
+    Colorized chunks containing ANSI escape codes are decoded and written as text, while non-color chunks are written as bytes. Flushes the output if requested.
     """
     color = b'\x1b['
     encoding = outfile.encoding
@@ -56,9 +60,10 @@ def write_with_colors_win_py3(stream, outfile, flush):
 
 
 def build_output_stream(args, env, request, response):
-    """Build and return a chain of iterators over the `request`-`response`
-    exchange each of which yields `bytes` chunks.
-
+    """
+    Constructs an iterator chain that yields byte chunks representing the HTTP request and response exchange.
+    
+    The output includes headers and/or body for the request and response, as specified by output options. Separators and trailing newlines are inserted for terminal output to improve readability.
     """
     req_h = OUT_REQ_HEAD in args.output_options
     req_b = OUT_REQ_BODY in args.output_options
@@ -95,10 +100,10 @@ def build_output_stream(args, env, request, response):
 
 
 def get_stream_type(env, args):
-    """Pick the right stream type based on `env` and `args`.
-    Wrap it in a partial with the type-specific args so that
-    we don't need to think what stream we are dealing with.
-
+    """
+    Selects and configures the appropriate HTTP output stream class based on environment and arguments.
+    
+    Returns a partial constructor for the chosen stream type, pre-filled with relevant parameters for raw, encoded, or prettified output.
     """
     if not env.stdout_isatty and not args.prettify:
         Stream = partial(
@@ -127,11 +132,16 @@ class BaseStream(object):
     def __init__(self, msg, with_headers=True, with_body=True,
                  on_body_chunk_downloaded=None):
         """
-        :param msg: a :class:`models.HTTPMessage` subclass
-        :param with_headers: if `True`, headers will be included
-        :param with_body: if `True`, body will be included
-
-        """
+                 Initializes a stream for outputting an HTTP message.
+                 
+                 Args:
+                     msg: An HTTPMessage instance representing the request or response.
+                     with_headers: Whether to include headers in the output.
+                     with_body: Whether to include the body in the output.
+                     on_body_chunk_downloaded: Optional callback invoked when a body chunk is downloaded.
+                 
+                 At least one of headers or body must be included.
+                 """
         assert with_headers or with_body
         self.msg = msg
         self.with_headers = with_headers
@@ -139,15 +149,25 @@ class BaseStream(object):
         self.on_body_chunk_downloaded = on_body_chunk_downloaded
 
     def get_headers(self):
-        """Return the headers' bytes."""
+        """
+        Returns the HTTP message headers as UTF-8 encoded bytes.
+        """
         return self.msg.headers.encode('utf8')
 
     def iter_body(self):
-        """Return an iterator over the message body."""
+        """
+        Returns an iterator over the message body.
+        
+        This method must be implemented by subclasses to yield body content in chunks.
+        """
         raise NotImplementedError()
 
     def __iter__(self):
-        """Return an iterator over `self.msg`."""
+        """
+        Yields the headers and body of the HTTP message as byte chunks.
+        
+        If headers are enabled, yields the encoded headers followed by a separator. If the body is enabled, yields each body chunk, optionally invoking a callback after each chunk. If binary data is suppressed, yields a notice instead of the body.
+        """
         if self.with_headers:
             yield self.get_headers()
             yield b'\r\n\r\n'
@@ -171,10 +191,19 @@ class RawStream(BaseStream):
     CHUNK_SIZE_BY_LINE = 1
 
     def __init__(self, chunk_size=CHUNK_SIZE, **kwargs):
+        """
+        Initializes a RawStream for streaming message bodies in raw byte chunks.
+        
+        Args:
+            chunk_size: The size of each chunk to read from the message body, in bytes.
+        """
         super(RawStream, self).__init__(**kwargs)
         self.chunk_size = chunk_size
 
     def iter_body(self):
+        """
+        Yields raw body chunks from the HTTP message using the specified chunk size.
+        """
         return self.msg.iter_body(self.chunk_size)
 
 
@@ -190,6 +219,11 @@ class EncodedStream(BaseStream):
 
     def __init__(self, env=Environment(), **kwargs):
 
+        """
+        Initializes the EncodedStream with the appropriate output encoding.
+        
+        Selects the encoding for output based on whether the output is a terminal (TTY). If writing to a terminal, uses the terminal's encoding; otherwise, preserves the message's original encoding. Defaults to UTF-8 if no encoding is specified.
+        """
         super(EncodedStream, self).__init__(**kwargs)
 
         if env.stdout_isatty:
@@ -204,6 +238,12 @@ class EncodedStream(BaseStream):
 
     def iter_body(self):
 
+        """
+        Iterates over the message body, yielding each line re-encoded for terminal output.
+        
+        Raises:
+            BinarySuppressedError: If binary data (null bytes) is detected in the body.
+        """
         for line, lf in self.msg.iter_lines(self.CHUNK_SIZE):
 
             if b'\0' in line:
@@ -225,16 +265,34 @@ class PrettyStream(EncodedStream):
     CHUNK_SIZE = 1
 
     def __init__(self, conversion, formatting, **kwargs):
+        """
+        Initializes a PrettyStream for processing and formatting HTTP message output.
+        
+        Args:
+            conversion: The content converter to apply to the message body.
+            formatting: The formatter used to prettify the output.
+            **kwargs: Additional arguments passed to the BaseStream initializer.
+        """
         super(PrettyStream, self).__init__(**kwargs)
         self.formatting = formatting
         self.conversion = conversion
         self.mime = self.msg.content_type.split(';')[0]
 
     def get_headers(self):
+        """
+        Returns the formatted and encoded HTTP headers for the message.
+        
+        The headers are formatted using the configured formatting object and encoded with the output encoding.
+        """
         return self.formatting.format_headers(
             self.msg.headers).encode(self.output_encoding)
 
     def iter_body(self):
+        """
+        Iterates over the message body, applying formatting and conversion as needed.
+        
+        If binary data is detected in the first chunk and a suitable converter is available, the entire body is converted and processed before yielding. If no converter is found, binary data is suppressed by raising a BinarySuppressedError. Each line is processed and formatted before being yielded as encoded output.
+        """
         first_chunk = True
         iter_lines = self.msg.iter_lines(self.CHUNK_SIZE)
         for line, lf in iter_lines:
@@ -256,6 +314,11 @@ class PrettyStream(EncodedStream):
             first_chunk = False
 
     def process_body(self, chunk):
+        """
+        Processes a body chunk by formatting and encoding it for output.
+        
+        If the chunk is not a string, it is decoded using the message's encoding. The chunk is then formatted according to the specified MIME type and re-encoded using the output encoding.
+        """
         if not isinstance(chunk, str):
             # Text when a converter has been used,
             # otherwise it will always be bytes.
@@ -277,6 +340,11 @@ class BufferedPrettyStream(PrettyStream):
     def iter_body(self):
         # Read the whole body before prettifying it,
         # but bail out immediately if the body is binary.
+        """
+        Iterates over the entire message body, buffering it before processing and formatting.
+        
+        If binary data is detected and a suitable converter is unavailable, raises BinarySuppressedError. Otherwise, applies conversion and formatting to the complete body and yields the processed result as a single chunk.
+        """
         converter = None
         body = bytearray()
 

@@ -14,11 +14,21 @@ DEFAULT_INDENT = 4
 
 def indent(elem, indent_text=' ' * DEFAULT_INDENT):
     """
-    In-place prettyprint formatter
-    C.f. http://effbot.org/zone/element-lib.htm#prettyprint
-
+    Formats an XML element tree in place with indentation for improved readability.
+    
+    Args:
+        elem: The root XML element to format.
+        indent_text: The string used for indentation at each level (default is four spaces).
+    
+    This function modifies the input element tree directly, adding newlines and indentation
+    to the `text` and `tail` properties of each element to produce a pretty-printed XML structure.
     """
     def _indent(elem, level=0):
+        """
+        Recursively applies indentation and newlines to an XML element and its children.
+        
+        Modifies the `text` and `tail` properties of each element to ensure proper pretty-print formatting based on the element's nesting level.
+        """
         i = "\n" + level * indent_text
         if len(elem):
             if not elem.text or not elem.text.strip():
@@ -40,6 +50,11 @@ class XMLFormatter(FormatterPlugin):
     # TODO: tests
 
     def format_body(self, body, mime):
+        """
+        Formats an XML response body with pretty-printed indentation.
+        
+        If the MIME type indicates XML, attempts to parse and reformat the body for improved readability, preserving the original XML declaration and DOCTYPE if present. Returns the formatted XML string, or the original body if parsing fails or the MIME type is not XML.
+        """
         if 'xml' in mime:
             # FIXME: orig NS names get forgotten during the conversion, etc.
             try:

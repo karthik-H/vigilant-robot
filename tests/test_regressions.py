@@ -7,8 +7,9 @@ from httpie.compat import is_windows
 
 def test_Host_header_overwrite(httpbin):
     """
-    https://github.com/jkbrzt/httpie/issues/235
-
+    Tests that the Host header can be explicitly set in an HTTP request.
+    
+    Sends a GET request to the httpbin service with a custom Host header and verifies that the response contains the HTTP OK status, the Host header appears exactly once, and its value matches the specified host.
     """
     host = 'httpbin.org'
     url = httpbin.url + '/get'

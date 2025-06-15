@@ -1,4 +1,21 @@
-#!/usr/bin/env bash
+# Provides Bash tab completion for the `http` command by suggesting options when the current word starts with a dash.
+#
+# Globals:
+#
+# * COMP_WORDS: Array of words in the current command line.
+# * COMP_CWORD: Index of the word the cursor is on.
+#
+# Arguments:
+#
+# None.
+#
+# Outputs:
+#
+# May call functions that set `COMPREPLY` for Bash completion.
+#
+# Example:
+#
+# When typing `http -` and pressing Tab, this function suggests available options.
 
 
 _http_complete() {
@@ -12,6 +29,26 @@ _http_complete() {
 
 complete -o default -F _http_complete http
 
+# Generates Bash completion suggestions for `http` command options matching the current word.
+#
+# Arguments:
+#
+# * cur_word: The current word being completed on the command line.
+#
+# Globals:
+#
+# * COMPREPLY: Populated with matching option completions for Bash to display.
+#
+# Outputs:
+#
+# * None.
+#
+# Example:
+#
+# ```bash
+# _http_complete_options --ver
+# # COMPREPLY will contain '--version'
+# ```
 _http_complete_options() {
     local cur_word=$1
     local options="-j --json -f --form --pretty -s --style -p --print

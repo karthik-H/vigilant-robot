@@ -29,6 +29,12 @@ HTTP_OK_COLOR = (
 
 
 def no_content_type(headers):
+    """
+    Checks if the 'Content-Type' header is missing or set to 'text/plain' in the given headers.
+    
+    Returns:
+        True if 'Content-Type' is absent or its value is 'text/plain'; otherwise, False.
+    """
     return (
         'Content-Type' not in headers
         # We need to do also this because of this issue:
@@ -39,6 +45,16 @@ def no_content_type(headers):
 
 
 def add_auth(url, auth):
+    """
+    Inserts HTTP basic authentication credentials into a URL.
+    
+    Args:
+        url: The URL string to modify.
+        auth: The authentication credentials in the format 'username:password'.
+    
+    Returns:
+        The URL with the credentials embedded before the host.
+    """
     proto, rest = url.split('://', 1)
     return proto + '://' + auth + '@' + rest
 
@@ -57,6 +73,11 @@ class TestEnvironment(Environment):
 
     def __init__(self, **kwargs):
 
+        """
+        Initializes a TestEnvironment with default settings for testing.
+        
+        Creates temporary files for stdout and stderr if not provided, and generates a temporary configuration directory unless specified. Marks the configuration directory for deletion if it was created by this initializer.
+        """
         if 'stdout' not in kwargs:
             kwargs['stdout'] = tempfile.TemporaryFile('w+b')
 
@@ -71,50 +92,20 @@ class TestEnvironment(Environment):
         super(TestEnvironment, self).__init__(**kwargs)
 
     def __del__(self):
+        """
+        Cleans up the temporary configuration directory if it was created by this instance.
+        """
         if self.delete_config_dir:
             self._shutil_rmtree(self.config_dir)
 
 
 def http(*args, **kwargs):
     """
-    Run HTTPie and capture stderr/out and exit status.
-
-    Invoke `httpie.core.main()` with `args` and `kwargs`,
-    and return a `CLIResponse` subclass instance.
-
-    The return value is either a `StrCLIResponse`, or `BytesCLIResponse`
-    if unable to decode the output.
-
-    The response has the following attributes:
-
-        `stdout` is represented by the instance itself (print r)
-        `stderr`: text written to stderr
-        `exit_status`: the exit status
-        `json`: decoded JSON (if possible) or `None`
-
-    Exceptions are propagated.
-
-    If you pass ``error_exit_ok=True``, then error exit statuses
-    won't result into an exception.
-
-    Example:
-
-    $ http --auth=user:password GET httpbin.org/basic-auth/user/password
-
-        >>> r = http('-a', 'user:pw', 'httpbin.org/basic-auth/user/pw')
-        >>> type(r) == StrCLIResponse
-        True
-        >>> r.exit_status
-        0
-        >>> r.stderr
-        ''
-        >>> 'HTTP/1.1 200 OK' in r
-        True
-        >>> r.json == {'authenticated': True, 'user': 'user'}
-        True
-
-
-    """
+    Executes an HTTPie command and returns the captured output, error, and exit status.
+    
+    Runs HTTPie's main function with the provided arguments, capturing standard output, standard error, and the exit status. Returns a `StrCLIResponse` if the output is valid UTF-8, or a `BytesCLIResponse` otherwise. The response object includes the output, error output, exit status, and, if possible, parsed JSON content.
+    
+    If `error_exit_ok=True` is passed, non-zero exit statuses do not raise exceptions. Otherwise, unexpected exit statuses or errors will propagate as exceptions.
     error_exit_ok = kwargs.pop('error_exit_ok', False)
     env = kwargs.get('env')
     if not env:
@@ -128,6 +119,9 @@ def http(*args, **kwargs):
         args = ['--traceback'] + args
 
     def dump_stderr():
+        """
+        Writes the contents of the temporary stderr file to the system standard error stream.
+        """
         stderr.seek(0)
         sys.stderr.write(stderr.read())
 
@@ -208,9 +202,10 @@ class StrCLIResponse(str, BaseCLIResponse):
     @property
     def json(self):
         """
-        Return deserialized JSON body, if one included in the output
-        and is parseable.
-
+        Attempts to parse and return a JSON object from the CLI output.
+        
+        Returns:
+            The deserialized JSON object if the output contains a parseable JSON body; otherwise, None.
         """
         if not hasattr(self, '_json'):
             self._json = None
@@ -238,4 +233,10 @@ class StrCLIResponse(str, BaseCLIResponse):
 
 
 def mk_config_dir():
+    """
+    Creates and returns a temporary directory for use as an HTTPie test config directory.
+    
+    Returns:
+        The path to the newly created temporary directory.
+    """
     return tempfile.mkdtemp(prefix='httpie_test_config_dir_')

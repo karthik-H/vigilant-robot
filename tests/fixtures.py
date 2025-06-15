@@ -5,9 +5,9 @@ import codecs
 
 def patharg(path):
     """
-    Back slashes need to be escaped in ITEM args,
-    even in Windows paths.
-
+    Escapes backslashes in a file path for use as an ITEM argument.
+    
+    Replaces each backslash in the input path with triple backslashes to ensure correct escaping, particularly for Windows file paths.
     """
     return path.replace('\\', '\\\\\\')
 

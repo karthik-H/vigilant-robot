@@ -20,6 +20,12 @@ class TestWindowsOnly:
 
 class TestFakeWindows:
     def test_output_file_pretty_not_allowed_on_windows(self, httpbin):
+        """
+        Tests that colorized output to a file is disallowed on Windows.
+        
+        Simulates a Windows environment and verifies that attempting to write colorized
+        (pretty) HTTP response output to a file results in an appropriate error message.
+        """
         env = TestEnvironment(is_windows=True)
         output_file = os.path.join(
             tempfile.gettempdir(), '__httpie_test_output__')

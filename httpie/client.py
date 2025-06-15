@@ -28,6 +28,11 @@ DEFAULT_UA = 'HTTPie/%s' % __version__
 
 
 def get_requests_session():
+    """
+    Creates and returns a requests.Session configured with transport plugins.
+    
+    The session mounts adapters from all available transport plugins, enabling support for custom protocols or behaviors as defined by each plugin.
+    """
     requests_session = requests.Session()
     for cls in plugin_manager.get_transport_plugins():
         transport_plugin = cls()
@@ -37,7 +42,11 @@ def get_requests_session():
 
 
 def get_response(args, config_dir):
-    """Send the request and return a `request.Response`."""
+    """
+    Sends an HTTP request and returns the resulting `requests.Response` object.
+    
+    Depending on the presence of session-related arguments, either sends a direct HTTP request using a configured session or retrieves a response from a managed session. Supports debugging output of request parameters when enabled.
+    """
 
     requests_session = get_requests_session()
 
@@ -59,6 +68,11 @@ def get_response(args, config_dir):
 
 
 def dump_request(kwargs):
+    """
+    Outputs a formatted representation of the request parameters to standard error.
+    
+    Used for debugging to display the keyword arguments that will be passed to `requests.request`.
+    """
     sys.stderr.write('\n>>> requests.request(**%s)\n\n'
                      % pformat(kwargs))
 
@@ -66,6 +80,11 @@ def dump_request(kwargs):
 def encode_headers(headers):
     # This allows for unicode headers which is non-standard but practical.
     # See: https://github.com/jkbrzt/httpie/issues/212
+    """
+    Encodes header values as UTF-8 bytes if they are Unicode strings.
+    
+    Allows non-standard Unicode headers for practical compatibility. Returns a new dictionary with encoded header values.
+    """
     return dict(
         (name, value.encode('utf8') if isinstance(value, str) else value)
         for name, value in headers.items()
@@ -73,6 +92,11 @@ def encode_headers(headers):
 
 
 def get_default_headers(args):
+    """
+    Constructs default HTTP headers based on the provided arguments.
+    
+    Sets the 'User-Agent' header and conditionally adds 'Accept' and 'Content-Type' headers depending on whether the request is sending or expecting JSON or form data.
+    """
     default_headers = {
         'User-Agent': DEFAULT_UA
     }
@@ -93,8 +117,16 @@ def get_default_headers(args):
 
 def get_requests_kwargs(args, base_headers=None):
     """
-    Translate our `args` into `requests.request` keyword arguments.
-
+    Converts argument values into a dictionary of keyword arguments for `requests.request`.
+    
+    Serializes data to JSON if required, finalizes and encodes headers, and prepares authentication, certificate, and other request parameters based on the provided arguments.
+    
+    Args:
+        args: An object containing request configuration, such as method, URL, headers, data, authentication, and other options.
+        base_headers: Optional dictionary of headers to merge with those derived from args.
+    
+    Returns:
+        A dictionary of keyword arguments suitable for use with `requests.request`.
     """
     # Serialize JSON data, if needed.
     data = args.data

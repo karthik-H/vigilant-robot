@@ -15,6 +15,14 @@ from utils import http, TestEnvironment
 class Response(object):
     # noinspection PyDefaultArgument
     def __init__(self, url, headers={}, status_code=200):
+        """
+        Initializes a mock HTTP response object with the given URL, headers, and status code.
+        
+        Args:
+            url: The URL associated with the response.
+            headers: Optional dictionary of HTTP headers. Defaults to an empty dictionary.
+            status_code: HTTP status code for the response. Defaults to 200.
+        """
         self.url = url
         self.headers = CaseInsensitiveDict(headers)
         self.status_code = status_code
@@ -22,6 +30,13 @@ class Response(object):
 
 class TestDownloadUtils:
     def test_Content_Range_parsing(self):
+        """
+        Tests the parse_content_range function for correct parsing and error handling.
+        
+        Verifies that valid Content-Range headers are parsed correctly and that
+        ContentRangeError is raised for missing headers, syntax errors, unexpected ranges,
+        invalid instance lengths, and invalid byte-range specifications.
+        """
         parse = parse_content_range
 
         assert parse('bytes 100-199/200', 100) == 200
@@ -75,6 +90,11 @@ class TestDownloadUtils:
         )
 
     def test_unique_filename(self):
+        """
+        Tests that get_unique_filename returns a unique filename by appending a numeric suffix if needed.
+        
+        Simulates file existence checks to verify that the function generates the correct unique filename when the original or suffixed names already exist.
+        """
         def attempts(unique_on_attempt=0):
             # noinspection PyUnresolvedReferences,PyUnusedLocal
             def exists(filename):
@@ -95,6 +115,11 @@ class TestDownloads:
     # TODO: more tests
 
     def test_actual_download(self, httpbin):
+        """
+        Tests downloading a file from a live HTTP server and verifies the download output.
+        
+        Fetches the content of '/robots.txt' from the provided httpbin server, performs a download using the HTTP client with the '--download' option, and asserts that progress messages appear in the output. Also checks that the downloaded content matches the expected file contents.
+        """
         url = httpbin.url + '/robots.txt'
         body = urlopen(url).read().decode()
         env = TestEnvironment(stdin_isatty=True, stdout_isatty=False)
@@ -105,6 +130,11 @@ class TestDownloads:
         assert body == r
 
     def test_download_with_Content_Length(self, httpbin):
+        """
+        Tests that a download with a specified Content-Length completes without interruption.
+        
+        Simulates downloading two chunks of data matching the declared Content-Length and verifies that the download is not marked as interrupted.
+        """
         devnull = open(os.devnull, 'w')
         download = Download(output_file=devnull, progress_file=devnull)
         download.start(Response(
@@ -119,6 +149,11 @@ class TestDownloads:
         assert not download.interrupted
 
     def test_download_no_Content_Length(self, httpbin):
+        """
+        Tests that a download without a Content-Length header completes without being marked as interrupted.
+        
+        Simulates downloading data from a response lacking the Content-Length header, writes a chunk, finishes the download, and asserts that the download is not interrupted.
+        """
         devnull = open(os.devnull, 'w')
         download = Download(output_file=devnull, progress_file=devnull)
         download.start(Response(url=httpbin.url + '/'))
@@ -128,6 +163,9 @@ class TestDownloads:
         assert not download.interrupted
 
     def test_download_interrupted(self, httpbin):
+        """
+        Tests that the Download class correctly marks a download as interrupted when fewer bytes are received than specified by the Content-Length header.
+        """
         devnull = open(os.devnull, 'w')
         download = Download(output_file=devnull, progress_file=devnull)
         download.start(Response(
