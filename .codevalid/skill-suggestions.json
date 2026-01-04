@@ -4,67 +4,59 @@
       "skill_name": "architecture-skill",
       "category": "Integration Feature",
       "breakdown_id": "ingest_meter_data",
-      "suggestion": "Specify the authentication method, credentials, and endpoint details required to access the EKM API push 3.",
+      "suggestion": "Specify the authentication method and credentials required to access the EKM API (e.g., API key, OAuth, username/password).",
       "priority": "High",
-      "rationale": "Without clear API authentication and endpoint details, the integration cannot be implemented or tested securely."
-    },
-    {
-      "skill_name": "architecture-skill",
-      "category": "Data / Reporting Change",
-      "breakdown_id": "ingest_meter_data",
-      "suggestion": "Clarify the data storage solution for the ingested meter data, including database type, schema, and retention policy.",
-      "priority": "High",
-      "rationale": "Developers need to know where and how to store the ingested data to ensure reliability and future access."
-    },
-    {
-      "skill_name": "architecture-skill",
-      "category": "Technical Specification",
-      "breakdown_id": "general",
-      "suggestion": "Specify the programming language, framework, and cloud environment to be used for the ingestion and hashing processes.",
-      "priority": "Medium",
-      "rationale": "Clear technical stack choices prevent misalignment and rework during implementation."
-    },
-    {
-      "skill_name": "architecture-skill",
-      "category": "Error Handling & Resilience",
-      "breakdown_id": "ingest_meter_data",
-      "suggestion": "Define what should happen if the EKM API is unavailable or returns errors (e.g., retry logic, alerting, or data buffering).",
-      "priority": "High",
-      "rationale": "Handling failures gracefully is critical for data reliability and operational stability."
+      "rationale": "Without clear authentication details, the system cannot reliably or securely connect to the EKM API, which could block implementation."
     },
     {
       "skill_name": "architecture-skill",
       "category": "Integration Feature",
       "breakdown_id": "ingest_meter_data",
-      "suggestion": "Clarify the expected rate limits, timeouts, and any throttling requirements when calling the EKM API every minute.",
+      "suggestion": "Clarify the expected behavior and error handling if the EKM API is unavailable or returns errors (e.g., retry logic, alerting, data loss handling).",
+      "priority": "High",
+      "rationale": "Defining error handling is critical to ensure data integrity and system resilience, especially for time-based ingestion."
+    },
+    {
+      "skill_name": "architecture-skill",
+      "category": "Data / Reporting Change",
+      "breakdown_id": "ingest_meter_data",
+      "suggestion": "Specify the target data storage system (e.g., database type, cloud storage) and required schema for storing the ingested meter data.",
+      "priority": "High",
+      "rationale": "Developers need to know where and how to store the ingested data to ensure consistency and retrievability."
+    },
+    {
+      "skill_name": "architecture-skill",
+      "category": "Technical Specification",
+      "breakdown_id": "general",
+      "suggestion": "Define the programming language, framework, and cloud environment (if any) to be used for implementing the ingestion and hashing logic.",
       "priority": "Medium",
-      "rationale": "Understanding rate limits and timeouts prevents service disruptions and ensures compliance with third-party API policies."
+      "rationale": "Specifying the technology stack avoids ambiguity and ensures compatibility with existing systems."
     },
     {
       "skill_name": "architecture-skill",
       "category": "Access Control",
       "breakdown_id": "hash_and_secure_meter_data",
-      "suggestion": "Specify how the cryptographic private key will be managed, stored, and accessed securely within the cloud system.",
+      "suggestion": "Clarify how the cryptographic private key for SHA-256 hashing will be securely stored, accessed, and rotated in the cloud system.",
       "priority": "High",
-      "rationale": "Improper key management can lead to security vulnerabilities and data breaches."
+      "rationale": "Improper key management can lead to security vulnerabilities and compromise the integrity of the hashed data."
     },
     {
       "skill_name": "architecture-skill",
-      "category": "Technical Specification",
-      "breakdown_id": "hash_and_secure_meter_data",
-      "suggestion": "Clarify whether the SHA-256 hashing should be applied to the entire data payload or to specific fields, and specify the output format (e.g., hex, base64).",
+      "category": "Data Modeling",
+      "breakdown_id": "ingest_meter_data",
+      "suggestion": "Provide field definitions, data types, and nullability rules for each extracted data field.",
       "priority": "Medium",
-      "rationale": "Precise hashing requirements are necessary to ensure consistent and verifiable data security."
+      "rationale": "Clear data modeling ensures correct mapping, validation, and future extensibility."
     },
     {
       "skill_name": "architecture-skill",
       "category": "User Flow",
       "breakdown_id": "general",
-      "suggestion": "Describe who or what will access or use the ingested and hashed data, and how (e.g., internal dashboards, external APIs, automated processes).",
+      "suggestion": "Describe who will access or use the ingested and hashed data, and through what interface (e.g., dashboard, API, reports).",
       "priority": "Medium",
-      "rationale": "Understanding the user flow ensures the system is designed to meet actual usage needs and access patterns."
+      "rationale": "Understanding the user flow helps define access patterns, security, and presentation requirements."
     }
   ],
-  "last_updated": "2026-01-04T15:36:07.165847",
+  "last_updated": "2026-01-04T23:50:07.021922",
   "version": "1.0"
 }
