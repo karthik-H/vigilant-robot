@@ -1,0 +1,17 @@
+{
+  "ingest_meter_data": {
+    "implementation": [],
+    "missing_implementations": [
+      "Extracts specified data fields from the EKM omnimeter pulse v.4 via the EKM API push 3 and imports them into the cloud system every 1 minute.",
+      "Data fields to extract: meter name, meter data, meter day of week, reading date, model, address, firmware, total watt hour, voltage, amps, total power (watts), CT ratio, frequency (hz)",
+      "Data must be pulled from the EKM omnimeter every 1 minute"
+    ]
+  },
+  "hash_and_secure_meter_data": {
+    "implementation": [],
+    "missing_implementations": [
+      "Hashing must use SHA-256",
+      "Hashing must use a cryptographic private key"
+    ]
+  }
+}
