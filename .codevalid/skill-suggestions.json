@@ -4,63 +4,55 @@
       "skill_name": "architecture-skill",
       "category": "Integration Feature",
       "breakdown_id": "ingest_meter_data",
-      "suggestion": "Specify the authentication method and credentials required to access the EKM API (e.g., API key, OAuth, username/password).",
+      "suggestion": "Specify the authentication method and credentials required to access the EKM API push 3, including how secrets will be managed and rotated.",
       "priority": "High",
-      "rationale": "Without clear authentication details, the system cannot reliably connect to the EKM API, which will block data ingestion."
-    },
-    {
-      "skill_name": "architecture-skill",
-      "category": "Integration Feature",
-      "breakdown_id": "ingest_meter_data",
-      "suggestion": "Clarify the expected API response format and provide a sample payload from the EKM API.",
-      "priority": "High",
-      "rationale": "Developers need to know the structure of the incoming data to correctly parse and map fields."
+      "rationale": "Without clear authentication details, the integration cannot be securely or reliably implemented."
     },
     {
       "skill_name": "architecture-skill",
       "category": "Data / Reporting Change",
       "breakdown_id": "ingest_meter_data",
-      "suggestion": "Define where and how the ingested data should be stored in the cloud system, including database type and schema.",
+      "suggestion": "Clarify the expected data format (e.g., JSON, XML) received from the EKM API and the format required for storage in the cloud system.",
       "priority": "High",
-      "rationale": "Data storage details are necessary to ensure the data is persisted correctly and can be retrieved or processed later."
+      "rationale": "Ambiguity in data formats can lead to parsing errors and data loss during ingestion."
     },
     {
       "skill_name": "architecture-skill",
-      "category": "Technical Specification",
-      "breakdown_id": "general",
-      "suggestion": "Specify the programming language, framework, and cloud environment to be used for implementation.",
-      "priority": "Medium",
-      "rationale": "Technical stack decisions impact implementation approach, compatibility, and deployment."
+      "category": "Data Storage",
+      "breakdown_id": "ingest_meter_data",
+      "suggestion": "Specify the type of database or storage system to be used in the cloud (e.g., PostgreSQL, MongoDB, S3), including connection details and retention policy.",
+      "priority": "High",
+      "rationale": "Developers need to know where and how to store the ingested data to ensure persistence and compliance."
     },
     {
       "skill_name": "architecture-skill",
       "category": "Error Handling & Resilience",
       "breakdown_id": "ingest_meter_data",
-      "suggestion": "Define what should happen if the EKM API is unavailable or returns errors (e.g., retry logic, alerting, skip, or queue for later).",
+      "suggestion": "Define what should happen if the EKM API is unavailable or returns errors (e.g., retry logic, alerting, data buffering).",
       "priority": "High",
-      "rationale": "Handling API failures is critical for reliability and data consistency."
+      "rationale": "Without error handling, data ingestion may silently fail, leading to data gaps."
     },
     {
       "skill_name": "architecture-skill",
-      "category": "Integration Feature",
-      "breakdown_id": "ingest_meter_data",
-      "suggestion": "Clarify if there are any rate limits or quotas imposed by the EKM API and how to handle them.",
+      "category": "Technical Specification",
+      "breakdown_id": "general",
+      "suggestion": "Specify the programming language and framework to be used for both ingestion and hashing components.",
       "priority": "Medium",
-      "rationale": "Exceeding rate limits could cause data loss or service disruption."
+      "rationale": "Clear technical stack guidance ensures consistency and maintainability."
     },
     {
       "skill_name": "architecture-skill",
       "category": "Access Control",
       "breakdown_id": "hash_and_secure_meter_data",
-      "suggestion": "Specify who or what systems are authorized to access the hashed meter data and how access is controlled.",
+      "suggestion": "Clarify who or what systems are authorized to access the hashed data and how access will be controlled.",
       "priority": "High",
-      "rationale": "Access control is essential to protect sensitive data and comply with security requirements."
+      "rationale": "Proper access control is critical to prevent unauthorized data exposure."
     },
     {
       "skill_name": "architecture-skill",
       "category": "Technical Specification",
       "breakdown_id": "hash_and_secure_meter_data",
-      "suggestion": "Clarify how the cryptographic private key is generated, stored, and managed (e.g., use of a key management service).",
+      "suggestion": "Clarify how the cryptographic private key will be generated, stored, and rotated, and whether a hardware security module (HSM) or key management service (KMS) will be used.",
       "priority": "High",
       "rationale": "Improper key management can compromise the security of the hashed data."
     },
@@ -68,19 +60,27 @@
       "skill_name": "architecture-skill",
       "category": "Data Modeling",
       "breakdown_id": "ingest_meter_data",
-      "suggestion": "Provide field definitions, data types, and nullability rules for each extracted data field.",
+      "suggestion": "Define the schema for the ingested data, including field types, nullability, and indexing requirements.",
       "priority": "Medium",
-      "rationale": "Clear data modeling ensures consistency and prevents data integrity issues."
+      "rationale": "A clear schema is necessary for efficient storage, querying, and future scalability."
     },
     {
       "skill_name": "architecture-skill",
-      "category": "UI / UX Feature",
+      "category": "UI / UX Design Considerations",
       "breakdown_id": "general",
-      "suggestion": "Clarify if there is any user interface or dashboard required to view or manage the ingested or hashed data.",
-      "priority": "Low",
-      "rationale": "If users need to interact with the data, UI requirements must be defined to avoid rework later."
+      "suggestion": "Specify if there is any user interface or dashboard required for monitoring the ingestion process, viewing data, or managing errors.",
+      "priority": "Medium",
+      "rationale": "If users need to interact with or monitor the system, UI requirements must be defined."
+    },
+    {
+      "skill_name": "architecture-skill",
+      "category": "Integration Feature",
+      "breakdown_id": "ingest_meter_data",
+      "suggestion": "Clarify if there are any rate limits imposed by the EKM API and how to handle them.",
+      "priority": "Medium",
+      "rationale": "Ignoring rate limits can lead to service disruptions or blocked API access."
     }
   ],
-  "last_updated": "2026-01-05T00:05:42.985870",
+  "last_updated": "2026-01-05T00:12:06.043728",
   "version": "1.0"
 }
