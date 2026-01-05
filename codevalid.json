@@ -8,7 +8,7 @@
         "Data fields to extract: meter name, meter data, meter day of week, reading date, model, address, firmware, total watt hour, voltage, amps, total power (watts), CT ratio, frequency (hz)",
         "Data must be pulled from the EKM omnimeter every 1 minute"
       ],
-      "change_status": "updated"
+      "change_status": ""
     },
     {
       "id": "hash_and_secure_meter_data",
@@ -21,6 +21,6 @@
       "change_status": ""
     }
   ],
-  "last_updated": "2026-01-05T00:34:37.010059",
+  "last_updated": "2026-01-05T00:40:43.364389",
   "version": "1.0"
 }
