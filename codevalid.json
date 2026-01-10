@@ -18,9 +18,9 @@
         "Hashing must use SHA-256",
         "Hashing must use a cryptographic private key"
       ],
-      "change_status": "updated"
+      "change_status": ""
     }
   ],
-  "last_updated": "2026-01-10T07:11:25.680433",
+  "last_updated": "2026-01-10T07:17:21.272317",
   "version": "1.0"
 }
