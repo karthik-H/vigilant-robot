@@ -2,8 +2,10 @@
   "ingest_meter_data": {
     "implementation": [],
     "missing_implementations": [
-      "Data fields to extract: meter name, meter data, meter day of week, reading date, model, address, firmware, total watt hour, voltage, amps, total power (watts), CT ratio, frequency (hz)",
-      "Data must be pulled from the EKM omnimeter every 1 minute"
+      "Extract specified data fields from the EKM omnimeter pulse v.4 (meter number 300016966) via the EKM API push 3",
+      "Import extracted data into the cloud system every 1 minute",
+      "Extract the following data fields: meter name, meter data, meter day of week, reading date, model, address, firmware, total watt hour, voltage, amps, total power (watts), CT ratio, frequency (hz)",
+      "Pull data from the EKM omnimeter every 1 minute"
     ]
   },
   "hash_and_secure_meter_data": {
